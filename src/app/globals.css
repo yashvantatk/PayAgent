@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030712;
+  --foreground: #f9fafb;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111827;
+}
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
+/* AG Grid dark theme overrides */
+.ag-theme-alpine-dark {
+  --ag-background-color: #111827;
+  --ag-header-background-color: #1f2937;
+  --ag-odd-row-background-color: #0d1117;
+  --ag-row-hover-color: #1e3a5f;
+  --ag-border-color: #374151;
+  --ag-header-foreground-color: #9ca3af;
+  --ag-foreground-color: #e5e7eb;
+  --ag-range-selection-border-color: #3b82f6;
+}
+
+/* PayPal button container styling */
+.paypal-buttons-container {
+  min-height: 45px;
+}
+
+/* Textarea auto-resize feel */
+textarea {
+  field-sizing: content;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Disable transition for animations */
+.animate-bounce,
+.animate-pulse,
+.animate-spin {
+  transition: none;
+}
