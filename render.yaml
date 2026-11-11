@@ -37,7 +37,6 @@ services:
   - type: workflow
     name: payagent-workflows
     runtime: node
-    plan: starter
     region: oregon
     buildCommand: npm install
     startCommand: npm run workflow
