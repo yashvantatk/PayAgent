@@ -3,19 +3,21 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "./ThemeProvider";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 h-16 w-full border-b border-slate-800/80 bg-[#090d16]/85 backdrop-blur-xl shadow-sm">
+    <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 h-16 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/85 dark:bg-[#090d16]/85 backdrop-blur-xl shadow-sm transition-colors duration-200">
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
         {/* Brand / Logo */}
         <Link
           href="/"
           className="flex items-center gap-3 hover:opacity-90 transition-opacity group"
         >
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-[0_0_18px_rgba(59,130,246,0.4)] border border-blue-400/30 group-hover:scale-105 transition-transform">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-[0_0_18px_rgba(59,130,246,0.35)] border border-blue-400/30 group-hover:scale-105 transition-transform">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -31,23 +33,23 @@ export default function Navbar() {
             </svg>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-white font-extrabold text-lg tracking-tight">
+            <span className="text-slate-900 dark:text-white font-extrabold text-lg tracking-tight">
               PayAgent
             </span>
-            <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20">
               v2.4
             </span>
           </div>
         </Link>
 
         {/* Center Pill Navigation */}
-        <nav className="flex items-center gap-1 p-1 rounded-full bg-[#0f172a]/90 border border-slate-800/80 shadow-inner">
+        <nav className="flex items-center gap-1 p-1 rounded-full bg-slate-100 dark:bg-[#0f172a]/90 border border-slate-200 dark:border-slate-800/80 shadow-inner">
           <Link
             href="/"
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
               pathname === "/"
                 ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
             {pathname === "/" && (
@@ -60,7 +62,7 @@ export default function Navbar() {
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
               pathname === "/dashboard"
                 ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60"
             }`}
           >
             {pathname === "/dashboard" && (
@@ -70,9 +72,9 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        {/* Live Status Indicators */}
+        {/* Right Actions & Badges */}
         <div className="flex items-center gap-2.5">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -80,9 +82,9 @@ export default function Navbar() {
             <span className="text-[11px] font-semibold tracking-wide">Channel3 Live</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs font-medium">
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs font-medium">
             <svg
-              className="w-3.5 h-3.5 text-blue-400"
+              className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -96,6 +98,46 @@ export default function Navbar() {
             </svg>
             <span className="text-[11px] font-semibold tracking-wide">PayPal Sandbox</span>
           </div>
+
+          {/* Light / Dark Mode Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] text-slate-700 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+          >
+            {theme === "dark" ? (
+              /* Sun Icon for switching to light */
+              <svg
+                className="w-4 h-4 text-amber-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            ) : (
+              /* Moon Icon for switching to dark */
+              <svg
+                className="w-4 h-4 text-slate-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
     </header>

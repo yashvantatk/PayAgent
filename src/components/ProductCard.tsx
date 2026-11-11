@@ -12,17 +12,17 @@ export default function ProductCard({ product }: ProductCardProps) {
   const originalPrice = product.price * 1.25;
 
   return (
-    <div className="relative group flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-[#0d1424]/90 backdrop-blur-md border border-slate-800/90 hover:border-blue-500/50 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all duration-300">
+    <div className="relative group flex flex-col justify-between p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0d1424]/90 backdrop-blur-md border border-slate-200/90 dark:border-slate-800/90 hover:border-blue-500/50 hover:shadow-lg dark:hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all duration-300">
       <div className="flex gap-4">
         {/* Product Image Container */}
-        <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 relative">
           <img
             src={product.image}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           {product.inStock && (
-            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/90 text-white backdrop-blur-sm">
+            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 dark:bg-emerald-500/90 text-white backdrop-blur-sm">
               In Stock
             </span>
           )}
@@ -33,9 +33,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div>
             {/* Merchant Tag & Rating */}
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700/60">
                 <svg
-                  className="w-3 h-3 text-blue-400"
+                  className="w-3 h-3 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -51,8 +51,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
 
               <div className="flex items-center gap-1 text-xs">
-                <span className="text-amber-400">★</span>
-                <span className="text-white font-semibold">{product.rating}</span>
+                <span className="text-amber-500 dark:text-amber-400">★</span>
+                <span className="text-slate-900 dark:text-white font-semibold">{product.rating}</span>
                 <span className="text-slate-500 text-[10px]">
                   ({product.reviewCount})
                 </span>
@@ -60,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
 
             {/* Product Title */}
-            <h4 className="font-semibold text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-blue-300 transition-colors">
+            <h4 className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
               {product.url ? (
                 <a
                   href={product.url}
@@ -77,13 +77,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             {/* Price section */}
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-xl sm:text-2xl font-extrabold text-emerald-400 tracking-tight font-mono">
+              <span className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
                 ${product.price.toFixed(2)}
               </span>
-              <span className="text-xs text-slate-500 line-through">
+              <span className="text-xs text-slate-400 dark:text-slate-500 line-through">
                 ${originalPrice.toFixed(2)}
               </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                 20% OFF
               </span>
             </div>
@@ -95,7 +95,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               {product.features.slice(0, 3).map((feature, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-md bg-slate-900/80 text-slate-400 text-[10px] border border-slate-800"
+                  className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 text-[10px] border border-slate-200 dark:border-slate-800"
                 >
                   {feature}
                 </span>
@@ -106,8 +106,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Footer Strip with Merchant Link & Direct Trigger */}
-      <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3 text-xs">
-        <span className="text-slate-400 text-[11px] truncate">
+      <div className="mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+        <span className="text-slate-500 dark:text-slate-400 text-[11px] truncate">
           {product.brand} • {product.category}
         </span>
 
@@ -116,7 +116,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             href={product.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1 rounded-lg border border-blue-500/20 transition-all shrink-0"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-500/20 transition-all shrink-0"
           >
             <span>Live Merchant Store</span>
             <svg
