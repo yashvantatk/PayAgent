@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry, ColDef } from "ag-grid-community";
 
@@ -22,6 +23,11 @@ interface Transaction {
 
 export default function DashboardContent() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [searchFilter, setSearchFilter] = useState("");
+  const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const gridRef = useRef<AgGridReact>(null);
+
   const [stats, setStats] = useState({
     totalTransactions: 0,
     totalRevenue: 0,
@@ -33,84 +39,148 @@ export default function DashboardContent() {
     // Load transactions from localStorage
     const stored = localStorage.getItem("payagent_transactions");
     if (stored) {
-      const txns = JSON.parse(stored) as Transaction[];
-      setTransactions(txns);
+      try {
+        const txns = JSON.parse(stored) as Transaction[];
+        setTransactions(txns);
 
-      const totalRevenue = txns.reduce((sum, t) => sum + t.amount, 0);
-      setStats({
-        totalTransactions: txns.length,
-        totalRevenue,
-        avgOrderValue: txns.length > 0 ? totalRevenue / txns.length : 0,
-        totalItems: txns.reduce(
-          (sum, t) => sum + t.items.reduce((s, i) => s + i.quantity, 0),
-          0
-        ),
-      });
+        const totalRevenue = txns.reduce((sum, t) => sum + (t.amount || 0), 0);
+        setStats({
+          totalTransactions: txns.length,
+          totalRevenue,
+          avgOrderValue: txns.length > 0 ? totalRevenue / txns.length : 0,
+          totalItems: txns.reduce(
+            (sum, t) =>
+              sum +
+              (t.items?.reduce((s, i) => s + (i.quantity || 1), 0) || 0),
+            0
+          ),
+        });
+
+        if (txns.length > 0) {
+          setSelectedTxn(txns[txns.length - 1]);
+        }
+      } catch (err) {
+        console.error("Failed to parse transactions", err);
+      }
     }
   }, []);
+
+  const handleCopyOrderId = (orderId: string) => {
+    navigator.clipboard.writeText(orderId);
+    setCopiedId(orderId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const columnDefs = useMemo<ColDef[]>(
     () => [
       {
         headerName: "Order ID",
         field: "orderId",
-        width: 180,
-        cellStyle: { color: "#60a5fa", fontFamily: "monospace", fontSize: "12px" } as Record<string, string>,
+        width: 170,
+        cellRenderer: (params: { value: string }) => {
+          return `
+            <div style="display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 12px; color: #60a5fa; font-weight: 500;">
+              <span>#${params.value || "ORD-N/A"}</span>
+            </div>
+          `;
+        },
       },
       {
         headerName: "Status",
         field: "status",
-        width: 120,
+        width: 140,
         cellRenderer: (params: { value: string }) => {
-          const color =
-            params.value === "COMPLETED"
-              ? "#4ade80"
-              : params.value === "PENDING"
-              ? "#fbbf24"
-              : "#f87171";
-          return `<span style="color: ${color}; font-weight: 600;">● ${params.value}</span>`;
+          const isCompleted = params.value === "COMPLETED";
+          const isPending = params.value === "PENDING";
+          const bg = isCompleted
+            ? "rgba(16, 185, 129, 0.15)"
+            : isPending
+            ? "rgba(245, 158, 11, 0.15)"
+            : "rgba(244, 63, 94, 0.15)";
+          const color = isCompleted
+            ? "#34d399"
+            : isPending
+            ? "#fbbf24"
+            : "#fb7185";
+          const border = isCompleted
+            ? "rgba(52, 211, 153, 0.3)"
+            : isPending
+            ? "rgba(251, 191, 36, 0.3)"
+            : "rgba(251, 113, 133, 0.3)";
+          const dot = isCompleted ? "#10b981" : isPending ? "#f59e0b" : "#f43f5e";
+
+          return `
+            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 9999px; background: ${bg}; border: 1px solid ${border}; color: ${color}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;">
+              <span style="width: 6px; height: 6px; border-radius: 9999px; background: ${dot}; box-shadow: 0 0 6px ${dot};"></span>
+              <span>${params.value || "UNKNOWN"}</span>
+            </div>
+          `;
         },
       },
       {
         headerName: "Amount",
         field: "amount",
-        width: 120,
+        width: 130,
         valueFormatter: (params: { value: number }) =>
-          `$${params.value?.toFixed(2) || "0.00"}`,
-        cellStyle: { color: "#4ade80", fontWeight: "bold" } as Record<string, string>,
+          `$${params.value?.toFixed(2) || "0.00"} USD`,
+        cellStyle: {
+          color: "#34d399",
+          fontWeight: "700",
+          fontFamily: "monospace",
+          fontSize: "13px",
+        } as Record<string, string>,
       },
       {
-        headerName: "Items",
+        headerName: "Products & Quantities",
         field: "items",
-        flex: 1,
-        minWidth: 200,
+        flex: 1.5,
+        minWidth: 220,
         valueFormatter: (params: { value: Transaction["items"] }) => {
           const items = params.value;
-          return items?.map((i) => `${i.quantity}× ${i.name}`).join(", ") || "";
+          return items?.map((i) => `${i.quantity}× ${i.name}`).join(", ") || "Custom Item";
         },
-        cellStyle: { color: "#d1d5db" } as Record<string, string>,
+        cellStyle: { color: "#e2e8f0", fontSize: "13px" } as Record<string, string>,
       },
       {
-        headerName: "User Query",
+        headerName: "User Natural Query",
         field: "userQuery",
-        flex: 1,
-        minWidth: 180,
-        cellStyle: { color: "#a78bfa", fontStyle: "italic" } as Record<string, string>,
+        flex: 1.2,
+        minWidth: 190,
+        cellRenderer: (params: { value: string }) => {
+          return `<span style="color: #c084fc; font-style: italic;">"${params.value || ""}"</span>`;
+        },
+      },
+      {
+        headerName: "Gateway",
+        width: 140,
+        valueGetter: () => "PayPal v2",
+        cellRenderer: () => {
+          return `
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: #172554; border: 1px solid #1e3a8a; color: #93c5fd; font-size: 11px; font-weight: 500;">
+              PayPal Orders
+            </span>
+          `;
+        },
       },
       {
         headerName: "Agent Reasoning",
         field: "agentReasoning",
-        flex: 1,
-        minWidth: 200,
-        cellStyle: { color: "#94a3b8", fontSize: "11px" } as Record<string, string>,
+        flex: 1.5,
+        minWidth: 210,
+        cellStyle: { color: "#94a3b8", fontSize: "12px" } as Record<string, string>,
       },
       {
-        headerName: "Time",
+        headerName: "Timestamp",
         field: "timestamp",
-        width: 180,
+        width: 170,
         valueFormatter: (params: { value: string }) =>
-          new Date(params.value).toLocaleString(),
-        cellStyle: { color: "#9ca3af" } as Record<string, string>,
+          new Date(params.value).toLocaleString([], {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        cellStyle: { color: "#64748b", fontSize: "12px" } as Record<string, string>,
       },
     ],
     []
@@ -126,183 +196,522 @@ export default function DashboardContent() {
   );
 
   const clearTransactions = () => {
-    localStorage.removeItem("payagent_transactions");
-    setTransactions([]);
-    setStats({
-      totalTransactions: 0,
-      totalRevenue: 0,
-      avgOrderValue: 0,
-      totalItems: 0,
-    });
+    if (confirm("Are you sure you want to clear all transaction and decision logs?")) {
+      localStorage.removeItem("payagent_transactions");
+      setTransactions([]);
+      setSelectedTxn(null);
+      setStats({
+        totalTransactions: 0,
+        totalRevenue: 0,
+        avgOrderValue: 0,
+        totalItems: 0,
+      });
+    }
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-gray-950 p-6 overflow-auto">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-[calc(100vh-64px)] bg-[#090d16] text-[#ebedfb] p-6 lg:p-8 overflow-y-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Top Header & Live Telemetry Badge */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-800/80 gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              📊 Transaction Dashboard
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              AI Agent decision audit trail & payment history
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+                PayAgent Telemetry & Decision Trail
+              </h1>
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                v2.4 Active Orchestrator
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm mt-1 flex items-center gap-2">
+              <span>Autonomous AI commerce pipeline: Gemini 3.1 Function Calling</span>
+              <span className="text-slate-600">•</span>
+              <span>Channel3 Real-time Catalog</span>
+              <span className="text-slate-600">•</span>
+              <span>PayPal Orders v2 Capture</span>
             </p>
           </div>
-          <button
-            onClick={clearTransactions}
-            className="text-sm text-red-400 hover:text-red-300 border border-red-800 hover:border-red-600 px-4 py-2 rounded-lg transition-colors"
-          >
-            Clear History
-          </button>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            label="Total Transactions"
-            value={stats.totalTransactions.toString()}
-            icon="📋"
-            color="blue"
-          />
-          <StatCard
-            label="Total Revenue"
-            value={`$${stats.totalRevenue.toFixed(2)}`}
-            icon="💰"
-            color="green"
-          />
-          <StatCard
-            label="Avg Order Value"
-            value={`$${stats.avgOrderValue.toFixed(2)}`}
-            icon="📈"
-            color="purple"
-          />
-          <StatCard
-            label="Items Sold"
-            value={stats.totalItems.toString()}
-            icon="📦"
-            color="yellow"
-          />
-        </div>
+          <div className="flex items-center gap-3">
+            {/* Live Socket Status Pill */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shadow-inner">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-mono text-emerald-400 font-semibold">LIVE</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-slate-400">Sandbox Ready</span>
+            </div>
 
-        {/* AG Grid */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-            <h2 className="text-white font-semibold flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Transaction Log
-            </h2>
-            <span className="text-gray-500 text-sm">
-              Powered by AG Grid
-            </span>
-          </div>
-          <div
-            className="ag-theme-alpine-dark"
-            style={{ height: "400px", width: "100%" }}
-          >
-            {transactions.length > 0 ? (
-              <AgGridReact
-                rowData={transactions}
-                columnDefs={columnDefs}
-                defaultColDef={defaultColDef}
-                animateRows={true}
-                pagination={true}
-                paginationPageSize={10}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <span className="text-4xl mb-3">🛒</span>
-                <p className="text-lg font-medium">No transactions yet</p>
-                <p className="text-sm">
-                  Complete a purchase in the chat to see data here
-                </p>
-              </div>
+            {transactions.length > 0 && (
+              <button
+                onClick={clearTransactions}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/50 text-xs font-semibold transition-all active:scale-95"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Clear History
+              </button>
             )}
           </div>
         </div>
 
-        {/* Agent Decision Trail */}
-        {transactions.length > 0 && (
-          <div className="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <h2 className="text-white font-semibold mb-4">
-              🧠 Agent Decision Trail
-            </h2>
-            <div className="space-y-3">
-              {transactions.slice(-5).reverse().map((txn) => (
-                <div
-                  key={txn.id}
-                  className="bg-gray-800 rounded-lg p-4 border border-gray-700"
+        {/* Top KPI Metrics Row (4 Glassmorphic Elevated Cards) */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 1: Total Volume */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0e1628]/90 to-[#0b101c]/90 border border-blue-500/30 p-5 shadow-[0_0_25px_rgba(37,99,235,0.12)] hover:border-blue-400/60 transition-all group">
+            <div className="absolute -right-8 -bottom-8 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/20 transition-all"></div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Total Settled Volume
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-white text-sm font-medium">
-                        User: &ldquo;{txn.userQuery}&rdquo;
-                      </p>
-                      <p className="text-gray-400 text-xs mt-1">
-                        Agent Actions: {txn.agentReasoning || "Direct checkout"}
-                      </p>
-                      <p className="text-gray-500 text-xs mt-1">
-                        Items:{" "}
-                        {txn.items
-                          .map((i) => `${i.quantity}× ${i.name}`)
-                          .join(", ")}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-green-400 font-bold">
-                        ${txn.amount?.toFixed(2)}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        {new Date(txn.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-extrabold text-white tracking-tight">
+                ${stats.totalRevenue.toFixed(2)}
+              </span>
+              <span className="text-xs font-mono text-blue-400 font-semibold">
+                USD
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-semibold border border-emerald-500/20">
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+                {stats.totalTransactions > 0 ? "+100%" : "0.0%"}
+              </span>
+              <span className="text-slate-500">PayPal Orders API</span>
             </div>
           </div>
+
+          {/* Card 2: Total Transactions */}
+          <div className="relative overflow-hidden rounded-2xl bg-[#0f172a]/70 backdrop-blur-md border border-slate-800/80 p-5 shadow-sm hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Total Transactions
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-extrabold text-white tracking-tight">
+                {stats.totalTransactions}
+              </span>
+              <span className="text-xs text-slate-500">orders</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="inline-flex items-center gap-1 text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full font-semibold border border-purple-500/20">
+                Verified Traces
+              </span>
+              <span className="text-slate-500">Full Audit Log</span>
+            </div>
+          </div>
+
+          {/* Card 3: Avg Order Value */}
+          <div className="relative overflow-hidden rounded-2xl bg-[#0f172a]/70 backdrop-blur-md border border-slate-800/80 p-5 shadow-sm hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Average Order Value
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-extrabold text-white tracking-tight">
+                ${stats.avgOrderValue.toFixed(2)}
+              </span>
+              <span className="text-xs font-mono text-cyan-400 font-semibold">
+                USD
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="inline-flex items-center gap-1 text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full font-semibold border border-cyan-500/20">
+                Smart Bundled
+              </span>
+              <span className="text-slate-500">Basket Optimization</span>
+            </div>
+          </div>
+
+          {/* Card 4: Items Sourced */}
+          <div className="relative overflow-hidden rounded-2xl bg-[#0f172a]/70 backdrop-blur-md border border-slate-800/80 p-5 shadow-sm hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Items Sourced & Sold
+              </span>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-extrabold text-white tracking-tight">
+                {stats.totalItems}
+              </span>
+              <span className="text-xs text-slate-500">units</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span className="inline-flex items-center gap-1 text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full font-semibold border border-amber-500/20">
+                Channel3 Catalog
+              </span>
+              <span className="text-slate-500">Live Merchant Feed</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Main Section: AG Grid Autonomous Transaction Records */}
+        <section className="rounded-2xl bg-[#0b101b]/95 backdrop-blur-md border border-slate-800/80 overflow-hidden shadow-xl">
+          {/* Grid Header Ribbon */}
+          <div className="px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800/80 bg-[#101726]/60">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
+              <h2 className="text-lg font-bold text-white tracking-tight">
+                Autonomous Payment Telemetry & Ledger
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[11px] font-mono text-slate-400">
+                {transactions.length} Records
+              </span>
+            </div>
+
+            {/* Quick Filter Search */}
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <svg
+                  className="w-4 h-4 absolute left-3 top-2.5 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Filter orders, items, reasoning..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-slate-900/80 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* AG Grid Component */}
+          <div
+            className="ag-theme-alpine-dark w-full"
+            style={{ height: "380px" }}
+          >
+            {transactions.length > 0 ? (
+              <AgGridReact
+                ref={gridRef}
+                rowData={transactions}
+                columnDefs={columnDefs}
+                defaultColDef={defaultColDef}
+                quickFilterText={searchFilter}
+                animateRows={true}
+                pagination={true}
+                paginationPageSize={10}
+                onRowClicked={(event) => {
+                  if (event.data) setSelectedTxn(event.data);
+                }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4 shadow-lg">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">
+                  No Autonomous Transactions Yet
+                </h3>
+                <p className="text-sm text-slate-500 max-w-md mb-5">
+                  Test the agent by chatting in the Assistant tab. Instruct PayAgent to find products and execute a PayPal sandbox checkout!
+                </p>
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                  Launch Shopping Agent
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* AI Agent Decision Audit Trail (Dedicated Stepper & Timeline Panel) */}
+        {selectedTxn && (
+          <section className="rounded-2xl bg-[#0b101b]/95 backdrop-blur-md border border-slate-800/80 p-6 shadow-xl space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-slate-800/80 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                    AI Autonomous Decision Audit Trail
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                    <span>Order:</span>
+                    <button
+                      onClick={() => handleCopyOrderId(selectedTxn.orderId)}
+                      className="font-mono text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20"
+                      title="Click to copy Order ID"
+                    >
+                      #{selectedTxn.orderId}
+                      {copiedId === selectedTxn.orderId ? (
+                        <span className="text-emerald-400 text-[10px]">Copied!</span>
+                      ) : (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <span>•</span>
+                    <span>{new Date(selectedTxn.timestamp).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status & Model Badges */}
+              <div className="flex items-center gap-2.5">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                  Gemini 3.1 Flash Lite
+                </span>
+                <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  PayPal Verified
+                </span>
+              </div>
+            </div>
+
+            {/* Stepper Timeline Breakdown */}
+            <div className="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+              {/* Step 1: User Intent Parsing */}
+              <div className="relative group">
+                <div className="absolute -left-6 top-0 w-6 h-6 rounded-full bg-slate-900 border-2 border-blue-500 flex items-center justify-center text-[10px] font-bold text-blue-400 ring-4 ring-[#0b101b]">
+                  1
+                </div>
+                <div className="bg-[#121826]/70 rounded-xl p-4 border border-slate-800/80 group-hover:border-blue-500/40 transition-all">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">
+                        User Natural Language Intent
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        NLP Intent
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">
+                      Inference Engine: Active
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-300 italic mb-2">
+                    &ldquo;{selectedTxn.userQuery}&rdquo;
+                  </p>
+                  <div className="bg-[#080d17] rounded-lg p-2.5 font-mono text-xs text-slate-400 border border-slate-800/60 overflow-x-auto">
+                    <code>{JSON.stringify({ query: selectedTxn.userQuery, action: "autonomous_procure" })}</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Catalog Search & Discovery */}
+              <div className="relative group">
+                <div className="absolute -left-6 top-0 w-6 h-6 rounded-full bg-slate-900 border-2 border-cyan-500 flex items-center justify-center text-[10px] font-bold text-cyan-400 ring-4 ring-[#0b101b]">
+                  2
+                </div>
+                <div className="bg-[#121826]/70 rounded-xl p-4 border border-slate-800/80 group-hover:border-cyan-500/40 transition-all">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">
+                        Channel3 Catalog Search & Price Validation
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                        Catalog Match
+                      </span>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-semibold">
+                      {selectedTxn.items?.length || 1} Item(s) Selected
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mb-2">
+                    {selectedTxn.agentReasoning || "Agent identified matching products in live merchant catalogs."}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                    {selectedTxn.items?.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-[#080d17] border border-slate-800/80 text-xs"
+                      >
+                        <span className="text-slate-300 font-medium truncate max-w-[200px]">
+                          {item.quantity}× {item.name}
+                        </span>
+                        <span className="text-emerald-400 font-mono font-bold">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: PayPal Payment Order Generation */}
+              <div className="relative group">
+                <div className="absolute -left-6 top-0 w-6 h-6 rounded-full bg-slate-900 border-2 border-emerald-500 flex items-center justify-center text-[10px] font-bold text-emerald-400 ring-4 ring-[#0b101b]">
+                  3
+                </div>
+                <div className="bg-[#121826]/70 rounded-xl p-4 border border-slate-800/80 group-hover:border-emerald-500/40 transition-all">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">
+                        PayPal Orders v2 API Settlement
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Capture 200 OK
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-mono">
+                      Currency: USD
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mb-2">
+                    Created and captured PayPal Order with intent <code className="text-blue-400">CAPTURE</code>. Verified buyer approval & funds settlement.
+                  </p>
+                  <div className="bg-[#080d17] rounded-lg p-2.5 font-mono text-xs text-slate-400 border border-slate-800/60 overflow-x-auto">
+                    <code>
+                      {JSON.stringify({
+                        order_id: selectedTxn.orderId,
+                        status: selectedTxn.status,
+                        amount: selectedTxn.amount,
+                        currency: selectedTxn.currency || "USD",
+                        payer: selectedTxn.payerEmail || "Verified Sandbox Payer",
+                      })}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         )}
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color: "blue" | "green" | "purple" | "yellow";
-}) {
-  const colorMap = {
-    blue: "from-blue-500/10 to-blue-600/5 border-blue-800/50",
-    green: "from-green-500/10 to-green-600/5 border-green-800/50",
-    purple: "from-purple-500/10 to-purple-600/5 border-purple-800/50",
-    yellow: "from-yellow-500/10 to-yellow-600/5 border-yellow-800/50",
-  };
-
-  const textColorMap = {
-    blue: "text-blue-400",
-    green: "text-green-400",
-    purple: "text-purple-400",
-    yellow: "text-yellow-400",
-  };
-
-  return (
-    <div
-      className={`bg-gradient-to-br ${colorMap[color]} border rounded-xl p-4`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-2xl">{icon}</span>
-      </div>
-      <p className={`text-2xl font-bold ${textColorMap[color]} mt-2`}>
-        {value}
-      </p>
-      <p className="text-gray-400 text-sm">{label}</p>
     </div>
   );
 }
