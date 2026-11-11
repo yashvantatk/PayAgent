@@ -327,6 +327,38 @@ export const PRODUCT_CATALOG: Product[] = [
 
 // ─── Search & Filter Functions ───
 
+import { searchChannel3, getCachedChannel3Product } from "./channel3";
+
+export async function searchProductsAsync(
+  query: string,
+  filters?: {
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minRating?: number;
+    brand?: string;
+  }
+): Promise<Product[]> {
+  // If Channel3 API key is configured, search real-time products via Channel3
+  if (process.env.CHANNEL3_API_KEY && query) {
+    try {
+      const channel3Results = await searchChannel3(query, {
+        minPrice: filters?.minPrice,
+        maxPrice: filters?.maxPrice,
+        category: filters?.category,
+      });
+
+      if (channel3Results.length > 0) {
+        return channel3Results;
+      }
+    } catch (e) {
+      console.warn("Channel3 search failed, falling back to local catalog:", e);
+    }
+  }
+
+  return searchProducts(query, filters);
+}
+
 export function searchProducts(query: string, filters?: {
   category?: string;
   minPrice?: number;
@@ -376,7 +408,7 @@ export function searchProducts(query: string, filters?: {
 }
 
 export function getProductById(id: string): Product | undefined {
-  return PRODUCT_CATALOG.find((p) => p.id === id);
+  return PRODUCT_CATALOG.find((p) => p.id === id) || getCachedChannel3Product(id);
 }
 
 export function getCategories(): string[] {

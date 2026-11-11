@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@channel3/sdk": "^4.9.0",
     "@google/genai": "^3.0.0",
     "@paypal/react-paypal-js": "^10.6.1",
     "ag-grid-community": "^36.3.0",

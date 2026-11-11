@@ -5,7 +5,7 @@ import {
   Content,
   Part,
 } from "@google/genai";
-import { searchProducts, getProductById, getCategories } from "./products";
+import { searchProducts, searchProductsAsync, getProductById, getCategories } from "./products";
 import { createOrder } from "./paypal";
 import { CartItem, Product, AgentAction } from "./types";
 
@@ -224,7 +224,7 @@ async function executeTool(
 ): Promise<{ result: unknown; products?: Product[]; cart?: CartItem[]; checkoutOrderId?: string }> {
   switch (name) {
     case "search_products": {
-      const results = searchProducts(args.query as string, {
+      const results = await searchProductsAsync(args.query as string, {
         category: args.category as string | undefined,
         minPrice: args.minPrice as number | undefined,
         maxPrice: args.maxPrice as number | undefined,

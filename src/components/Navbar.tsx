@@ -49,8 +49,12 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* PayPal Badge */}
+        {/* Badges */}
         <div className="flex items-center gap-2">
+          <span className="bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            Channel3 Data
+          </span>
           <span className="bg-yellow-500/10 text-yellow-500 text-xs font-semibold px-3 py-1.5 rounded-full border border-yellow-500/20">
             PayPal Sandbox
           </span>

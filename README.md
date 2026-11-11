@@ -9,7 +9,7 @@ PayAgent is an intelligent conversational shopping assistant that lets users dis
 ## ✨ Features
 
 - **🤖 Conversational AI Agent** — Natural language product discovery powered by Google Gemini with function calling
-- **🔍 Smart Product Search** — Search by name, category, price range, rating, or natural descriptions
+- **🛍️ Channel3 Universal Catalog** — Live real-world multi-merchant product discovery using Channel3's agentic search API
 - **🛒 Intelligent Cart Management** — AI adds, removes, and summarizes cart contents with reasoning
 - **💳 Secure PayPal Checkout** — One-click PayPal payment via Orders v2 API (Sandbox)
 - **📊 AG Grid Dashboard** — Transaction history, agent decision audit trail, and analytics
@@ -132,6 +132,7 @@ The AG Grid-powered dashboard provides:
 This project targets:
 - 🥇 **Grand Prize** — Full agentic commerce flow
 - 🤖 **Best Use of Agentic Commerce** — AI agent that autonomously shops and checks out
+- 🛍️ **Best Use of Channel3** ($1,500) — Real-time clean product data integration with agentic mode
 - 🎨 **Best Use of PayPal + AI** — Deep integration of both platforms
 - 📊 **Best Use of AG Grid** — Transaction dashboard with audit trail
 

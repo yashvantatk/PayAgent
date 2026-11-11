@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchProducts, getCategories, getBrands } from "@/lib/products";
+import { searchProductsAsync, getCategories, getBrands } from "@/lib/products";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     ? parseFloat(searchParams.get("minRating")!)
     : undefined;
 
-  const products = searchProducts(query, {
+  const products = await searchProductsAsync(query, {
     category,
     minPrice,
     maxPrice,
