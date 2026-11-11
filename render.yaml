@@ -1,20 +1,17 @@
-# Render Blueprint Specification for PayAgent
-# PayPal AI Hackathon 2026 - Best Use of Render
-# Documentation: https://render.com/docs/blueprint-spec
-# Render Workflows: https://render.com/docs/workflows
+# Render Blueprint Specification for PayAgent (100% Free Tier)
+# PayPal AI Hackathon 2026 - Free Deployment (No Credit Card Required)
 
 services:
   # =========================================================================
-  # 1. Full-Stack Web Application (Next.js 16 + React 19 + Tailwind v4)
+  # Full-Stack Web Application (Next.js 16 + React 19 + Tailwind v4)
   # =========================================================================
   - type: web
     name: payagent-web
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: npm install && npm run build
     startCommand: npm start
-    healthCheckPath: /api/workflow/dispatch
     envVars:
       - key: NODE_ENV
         value: production
@@ -30,26 +27,3 @@ services:
         value: sandbox
       - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
         sync: false
-
-  # =========================================================================
-  # 2. Render Workflows Service (Distributed Agent Orchestration Engine)
-  # =========================================================================
-  - type: workflow
-    name: payagent-workflows
-    runtime: node
-    region: oregon
-    buildCommand: npm install
-    startCommand: npm run workflow
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: CHANNEL3_API_KEY
-        sync: false
-      - key: PAYPAL_CLIENT_ID
-        sync: false
-      - key: PAYPAL_CLIENT_SECRET
-        sync: false
-      - key: PAYPAL_MODE
-        value: sandbox
