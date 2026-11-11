@@ -1,5 +1,12 @@
 # 🛒 PayAgent — Autonomous AI Shopping & Commerce Engine
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-payagent--web.onrender.com-00C7B7?style=for-the-badge&logo=render&logoColor=white)](https://payagent-web.onrender.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![PayPal](https://img.shields.io/badge/PayPal-Orders%20v2-00457C?style=for-the-badge&logo=paypal)](https://developer.paypal.com)
+[![Gemini](https://img.shields.io/badge/Google%20Gemini-3.1%20Flash-4285F4?style=for-the-badge&logo=google)](https://ai.google.dev/)
+
+> 🌐 **Live Application:** [https://payagent-web.onrender.com](https://payagent-web.onrender.com)
+
 PayAgent is an enterprise-ready conversational shopping assistant and autonomous commerce engine. It allows users to discover products through natural language, compare options across multi-merchant catalogs, and execute secure one-click checkouts via PayPal — seamlessly orchestrated within an agentic workflow.
 
 ---
@@ -138,10 +145,13 @@ PayAgent includes an interactive administrative dashboard accessible at `/dashbo
 
 ## 🌐 Deployment
 
-PayAgent is configured for zero-downtime deployment on **Render**:
-- Blueprint specification provided via [`render.yaml`](./render.yaml).
-- Production build: `npm install --include=dev && npm run build`
-- Start command: `npm start`
+PayAgent is configured for continuous zero-downtime deployment on **Render**:
+
+- **Production URL**: [https://payagent-web.onrender.com](https://payagent-web.onrender.com)
+- **Infrastructure Blueprint**: [`render.yaml`](./render.yaml)
+- **Production Build Command**: `npm install --include=dev && npm run build`
+- **Start Command**: `npm start`
+- **Environment**: Node.js (Render Free Tier Web Service)
 
 ---
 
