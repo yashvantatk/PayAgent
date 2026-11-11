@@ -23,7 +23,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Product Info */}
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-white text-sm truncate">
-            {product.name}
+            {product.url ? (
+              <a
+                href={product.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-400 hover:underline"
+              >
+                {product.name}
+              </a>
+            ) : (
+              product.name
+            )}
           </h3>
 
           <div className="flex items-center gap-2 mt-1">
@@ -56,18 +67,44 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
 
-      {/* Stock indicator */}
-      <div className="mt-2 flex items-center justify-between">
-        <span
-          className={`text-xs ${
-            product.inStock ? "text-green-400" : "text-red-400"
-          }`}
-        >
-          {product.inStock ? "✓ In Stock" : "✗ Out of Stock"}
-        </span>
-        <span className="text-xs text-gray-500">
-          {product.brand} • {product.category}
-        </span>
+      {/* Stock indicator & Merchant Link */}
+      <div className="mt-3 pt-2.5 border-t border-gray-800 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs ${
+              product.inStock ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {product.inStock ? "✓ In Stock" : "✗ Out of Stock"}
+          </span>
+          <span className="text-xs text-gray-500">
+            {product.brand} • {product.category}
+          </span>
+        </div>
+
+        {product.url && (
+          <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20 transition-colors"
+          >
+            <span>View on {product.merchant || "Store"}</span>
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
+        )}
       </div>
     </div>
   );

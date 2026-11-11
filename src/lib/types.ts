@@ -13,6 +13,8 @@ export interface Product {
   image: string;
   features: string[];
   inStock: boolean;
+  url?: string;
+  merchant?: string;
 }
 
 export interface CartItem {

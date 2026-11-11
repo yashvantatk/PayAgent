@@ -69,6 +69,8 @@ export async function searchChannel3(
         image,
         features,
         inStock: bestOffer?.availability !== "OutOfStock",
+        url: bestOffer?.url,
+        merchant: bestOffer?.domain || "Channel3 Partner",
       };
 
       // Store in cache for cart and checkout resolution
